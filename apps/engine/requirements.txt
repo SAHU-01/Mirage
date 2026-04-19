@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+langgraph
+langchain-openai
+pydantic
+python-dotenv
+httpx
+psycopg2-binary
+redis
