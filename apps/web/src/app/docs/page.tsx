@@ -779,12 +779,12 @@ export default function DocsPage() {
           <h2 className="retro-heading">|TELEGRAM BOT</h2>
           <p className="retro-text">
             <a
-              href="https://t.me/NiksSupportkb_bot"
+              href="https://t.me/Mirage4memeBot"
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: "var(--retro-green)" }}
             >
-              @NiksSupportkb_bot ↗
+              @Mirage4memeBot ↗
             </a>
           </p>
           <div className="space-y-2">

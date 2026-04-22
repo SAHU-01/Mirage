@@ -113,7 +113,7 @@ export default function Home() {
           {/* Navigation Buttons */}
           <div className="flex flex-wrap justify-center gap-2">
             <a href="/docs" className="retro-btn">DOCS ↗</a>
-            <a href="https://t.me/NiksSupportkb_bot" target="_blank" rel="noopener noreferrer" className="retro-btn">TELEGRAM ↗</a>
+            <a href="https://t.me/Mirage4memeBot" target="_blank" rel="noopener noreferrer" className="retro-btn">TELEGRAM ↗</a>
             <a href="#get-started" className="retro-btn retro-btn-primary">
               ANALYZE ↗
             </a>

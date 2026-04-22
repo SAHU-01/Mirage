@@ -95,7 +95,7 @@ flowchart TD
 - **Wallet Trust Verdict API** (`POST /analyze_wallet`) — Multi-agent reasoning on wallet funding, behavior, and timing patterns
 - **Token Trust Verdict** (`POST /analyze_token`) — Analyzes early buyers, computes bundle contamination %, graduation probability, ranked buyer table
 - **Auto-Detect Router** (`POST /analyze`) — Smart endpoint that detects wallet vs ERC-20 token contract automatically
-- **Telegram Bot** ([@NiksSupportkb_bot](https://t.me/NiksSupportkb_bot)) — Paste any address, get formatted verdict cards with inline expand for reasoning
+- **Telegram Bot** ([@Mirage4memeBot](https://t.me/Mirage4memeBot)) — Paste any address, get formatted verdict cards with inline expand for reasoning
 - **Web Dashboard** — Pixel-themed Next.js app with auto-detect, results display, and subscribe
 - **Three-Agent Reasoner** — LangGraph orchestration of Coin, Wallet, Timing agents with evidence-cite enforcement
 - **Exit Watchdog** — Subscribe to wallets, get Telegram alerts when distribution behavior is detected
