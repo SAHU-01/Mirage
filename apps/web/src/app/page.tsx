@@ -112,10 +112,10 @@ export default function Home() {
 
           {/* Navigation Buttons */}
           <div className="flex flex-wrap justify-center gap-2">
-            <a href="/docs" className="retro-btn">DOCS ↗</a>
-            <a href="https://t.me/Mirage4memeBot" target="_blank" rel="noopener noreferrer" className="retro-btn" style={{ background: "#dbeafe", borderColor: "#1e40af", boxShadow: "3px 3px 0px #1e40af" }}>TELEGRAM ↗</a>
+            <a href="/docs" className="retro-btn">DOCS &gt;&gt;</a>
+            <a href="https://t.me/Mirage4memeBot" target="_blank" rel="noopener noreferrer" className="retro-btn" style={{ background: "#dbeafe", borderColor: "#1e40af", boxShadow: "3px 3px 0px #1e40af" }}>TELEGRAM &gt;&gt;</a>
             <a href="#get-started" className="retro-btn retro-btn-primary">
-              ANALYZE ↗
+              ANALYZE &gt;&gt;
             </a>
           </div>
 
@@ -142,7 +142,7 @@ export default function Home() {
                 disabled={loading}
                 className="retro-btn retro-btn-primary disabled:opacity-50"
               >
-                {loading ? "SCANNING..." : "SCAN →"}
+                {loading ? "SCANNING..." : "SCAN >>"}
               </button>
             </div>
 
