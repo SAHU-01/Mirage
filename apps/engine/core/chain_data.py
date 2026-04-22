@@ -116,9 +116,17 @@ class ChainDataClient:
         return {}
 
     async def is_erc20_contract(self, address: str) -> bool:
-        """True if Moralis knows this address as an ERC-20 token contract."""
+        """True if Moralis knows this address as a real ERC-20 token contract.
+        Moralis returns decimals='0' and empty name/symbol for regular wallets,
+        so we require a non-empty name or symbol to confirm it's a token."""
         meta = await self.get_token_metadata(address)
-        return bool(meta) and meta.get("decimals") is not None
+        if not meta or meta.get("decimals") is None:
+            return False
+        name = (meta.get("name") or "").strip()
+        symbol = (meta.get("symbol") or "").strip()
+        total_supply = meta.get("total_supply")
+        # A real token has a name or symbol or total_supply
+        return bool(name or symbol or total_supply)
 
     async def get_token_transfers(self, token: str, limit: int = 100) -> List[Dict]:
         limit = min(limit, 100)  # Moralis free tier caps page size at 100
