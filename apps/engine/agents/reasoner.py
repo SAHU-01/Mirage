@@ -1,4 +1,4 @@
-from typing import TypedDict, List, Optional, Dict, Any
+from typing import TypedDict, List, Optional, Dict, Any  # noqa: F401
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -36,27 +36,42 @@ class AgentState(TypedDict):
     reasoning_trace: List[Dict[str, Any]]
 
 
-COIN_SYSTEM = """You are the Coin Agent in Mirage, an anti-adversarial copy-trading intelligence system for BNB Chain / Four.meme.
-Your job: reason about token safety, creator history, and tokenomics signals.
-You MUST cite evidence. Every claim must reference a block number, tx hash, or wallet address from the provided evidence pool.
-Return ONLY a JSON object with this shape:
-{"score": <0-100 trust score>, "findings": ["<claim 1>", "<claim 2>", ...], "citations": [{"claim": "<claim>", "block_number": <int|null>, "tx_hash": "<str|null>", "wallet_address": "<str|null>"}]}
-Lower score = more adversarial. Higher score = safer / more alpha-like."""
+_AGENT_JSON_RULES = """Return ONLY a single JSON object with EXACTLY these three top-level keys, no others:
+- "score": integer 0-100 (lower = more adversarial, higher = more alpha-like)
+- "findings": array of 2-4 short string observations
+- "citations": array of objects, each with keys {"claim": string, "block_number": integer|null, "tx_hash": string|null, "wallet_address": string|null}
 
-WALLET_SYSTEM = """You are the Wallet Agent in Mirage. Reason about wallet funding sources, cluster behavior, and co-buyer overlap.
-Flag bundle bots (high bundle coefficient), funding ancestors shared with known adversarial wallets, and low cross-token alpha variance.
-Every claim must cite a block, tx hash, or wallet address. Return the same JSON shape as other agents."""
+Do NOT include keys like "wallet", "token", "verdict", "reasoning", or any other top-level keys.
+Cite only block numbers, tx hashes, and wallet addresses that appear in the provided evidence pool.
+If the evidence pool is empty, set each citation's block_number/tx_hash/wallet_address to null and still produce findings from the structured features.
 
-TIMING_SYSTEM = """You are the Timing Agent in Mirage. Reason about block-timing entropy and transaction cadence.
-Low timing entropy = bot-like regularity. Coordinated same-block buys = bundle behavior.
-Every claim must cite a block number. Return the same JSON shape as other agents."""
+Example valid output:
+{"score": 22, "findings": ["High bundle coefficient (0.87) indicates coordinated same-block buys", "Timing entropy of 0.4 suggests automated cadence"], "citations": [{"claim": "High bundle coefficient", "block_number": 42891334, "tx_hash": null, "wallet_address": null}]}"""
 
-AGGREGATOR_SYSTEM = """You are the Trust Verdict Engine. Given three agent analyses, produce:
-1. A final verdict: COPY (safe to copy-trade), AVOID (adversarial signals), or UNCERTAIN (mixed/insufficient).
-2. A composite Trust Score 0-100.
-3. A counter-argument: one sentence describing what would need to be true to invalidate this verdict.
+COIN_SYSTEM = f"""You are the Coin Agent in Mirage, an anti-adversarial copy-trading intelligence system for BNB Chain / Four.meme.
+Reason about token safety, creator history, and tokenomics signals.
 
-Return ONLY JSON: {"verdict": "COPY|AVOID|UNCERTAIN", "trust_score": <0-100>, "counter_argument": "<str>"}"""
+{_AGENT_JSON_RULES}"""
+
+WALLET_SYSTEM = f"""You are the Wallet Agent in Mirage. Reason about wallet funding sources, cluster behavior, and co-buyer overlap.
+Flag bundle bots (high bundle_coefficient), shared funding ancestors with known adversarial wallets (low graph_distance_to_adversarial), and low cross_token_alpha_variance.
+
+{_AGENT_JSON_RULES}"""
+
+TIMING_SYSTEM = f"""You are the Timing Agent in Mirage. Reason about block-timing entropy and transaction cadence.
+Low timing_entropy = bot-like regularity. Coordinated same-block buys (high bundle_coefficient) = bundle behavior.
+
+{_AGENT_JSON_RULES}"""
+
+AGGREGATOR_SYSTEM = """You are the Trust Verdict Engine. Given three agent analyses, produce a final verdict.
+
+Return ONLY a single JSON object with EXACTLY these keys:
+- "verdict": one of "COPY", "AVOID", "UNCERTAIN"
+- "trust_score": integer 0-100
+- "counter_argument": one sentence describing what would need to be true to invalidate this verdict
+
+Do NOT add any other keys. Example:
+{"verdict": "AVOID", "trust_score": 18, "counter_argument": "This verdict would flip if the same-block buys were routed through a single aggregator contract rather than coordinated wallets."}"""
 
 
 def _parse_json_safely(text: str) -> Dict[str, Any]:
@@ -71,28 +86,38 @@ def _parse_json_safely(text: str) -> Dict[str, Any]:
     return json.loads(text)
 
 
-def _validate_citations(findings: List[str], citations: List[Dict], evidence_pool: Dict) -> List[Dict]:
-    """Drop citations that reference block numbers or tx hashes not in the evidence pool."""
+def _validate_citations(findings: List[str], citations: Any, evidence_pool: Dict) -> List[Dict]:
+    """Drop citations that reference block numbers or tx hashes not in the evidence pool.
+    Tolerates LLM outputs where individual citations are strings or missing fields."""
+    if not isinstance(citations, list):
+        return []
     valid_blocks = set(evidence_pool.get("block_numbers", []))
     valid_hashes = set(evidence_pool.get("tx_hashes", []))
     valid_wallets = set(evidence_pool.get("wallets", []))
 
-    cleaned = []
+    cleaned: List[Dict] = []
     for c in citations:
-        block_ok = c.get("block_number") is None or c["block_number"] in valid_blocks
-        hash_ok = c.get("tx_hash") is None or c["tx_hash"] in valid_hashes
-        wallet_ok = c.get("wallet_address") is None or c["wallet_address"] in valid_wallets
+        if not isinstance(c, dict):
+            continue
+        block_ok = c.get("block_number") is None or c.get("block_number") in valid_blocks
+        hash_ok = c.get("tx_hash") is None or c.get("tx_hash") in valid_hashes
+        wallet_ok = c.get("wallet_address") is None or c.get("wallet_address") in valid_wallets
         if block_ok and hash_ok and wallet_ok:
-            cleaned.append(c)
+            cleaned.append({
+                "claim": str(c.get("claim", "")),
+                "block_number": c.get("block_number"),
+                "tx_hash": c.get("tx_hash"),
+                "wallet_address": c.get("wallet_address"),
+            })
     return cleaned
 
 
 class MirageReasoner:
     def __init__(self):
         self.llm = ChatOpenAI(
-            model="deepseek-chat",
+            model=os.getenv("LLM_MODEL", "deepseek-chat"),
             api_key=os.getenv("DEEPSEEK_API_KEY"),
-            base_url="https://api.deepseek.com",
+            base_url=os.getenv("LLM_BASE_URL", "https://api.deepseek.com/v1"),
             temperature=0.1,
         )
         self.workflow = StateGraph(AgentState)
