@@ -26,3 +26,5 @@ yarn-error.log*
 .vscode/
 .idea/
 *.swp
+__pycache__/
+*.pyc
