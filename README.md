@@ -1,12 +1,127 @@
-# Mirage: Anti-Adversarial Intelligence Layer
+# MIRAGE — Anti-Adversarial Copy-Trading Intelligence
 
-Mirage is a multi-agent reasoning engine designed to detect adversarial bots (bundle bots, wash traders, snipers) on the BNB Chain, specifically targeting Four.meme.
+> *Every other tool tells you who's winning. Mirage tells you who's cheating.*
+
+Mirage is an anti-adversarial intelligence layer for memecoin copy-trading on **Four.meme** and **BNB Chain**. It uses a multi-agent LLM system with chain-of-thought reasoning to analyze wallets and tokens, producing explainable **Trust Verdicts** (Copy / Avoid / Uncertain) backed by on-chain evidence citations.
+
+Built on [ACM WWW 2026 research](https://arxiv.org/abs/2601.08641) (Luo et al.) proving multi-agent CoT detects adversarial memecoin wallets better than zero-shot LLMs and statistical baselines.
+
+---
+
+## Product Screenshots
+
+### Dashboard — Paste any address, get an instant verdict
+![Dashboard Home](apps/web/public/screenshots/dashboard-home.jpg)
+
+### Wallet Verdict — Trust score, counter-argument, and three agent analyses
+![Wallet Results](apps/web/public/screenshots/wallet-results.jpg)
+
+### Agent Reasoning — Each agent scores independently with cited evidence
+![Agent Reasoning](apps/web/public/screenshots/agent-reasoning.jpg)
+
+### Exit Watchdog — Subscribe to Telegram alerts when a wallet starts distributing
+![Subscribe Alerts](apps/web/public/screenshots/subscribe-alerts.jpg)
+
+---
+
+## The Problem
+
+Hundreds of thousands of retail traders copy "smart money wallets" on Four.meme daily. They lose — because most of those wallets are adversarial bots built to farm copy-traders via bundle coordination, sniper positioning, wash trading, and social manipulation.
+
+Existing tools (GMGN, Axiom, BullX) rank wallets by PnL — the exact metric adversarial bots are engineered to optimize. **No tool on BNB Chain reasons about whether a "smart money" wallet is itself adversarial.**
+
+## The Solution
+
+Mirage does not display wallets — it *reasons* about them. For every wallet and token:
+
+1. **Three specialized AI agents** (Coin, Wallet, Timing) evaluate structured on-chain features
+2. Every claim must **cite a block number, tx hash, or wallet address** from the evidence pool
+3. An **Aggregator** produces a final verdict with a **counter-argument** explaining what would invalidate it
+4. A **feedback loop** verifies verdicts against on-chain outcomes after 24h
+
+---
 
 ## Architecture
 
-- **`apps/engine`**: Python FastAPI service using LangGraph for multi-agent CoT reasoning.
-- **`apps/bot`**: grammY Telegram Bot for quick wallet/token audits.
-- **`apps/web`**: Next.js 15 dashboard for detailed analysis and ranked buyer tracking.
+```
+User (Web / Telegram)
+        |
+   POST /analyze (auto-detect wallet vs token)
+        |
+   Moralis Web3 API (BSC) → fetch txs, transfers, metadata
+        |
+   Feature Extraction (7 structured signals)
+        |
+   Evidence Pool (block numbers, tx hashes, wallets)
+        |
+   ┌─────────────┬──────────────┬──────────────┐
+   │ Coin Agent  │ Wallet Agent │ Timing Agent │
+   └──────┬──────┴──────┬───────┴──────┬───────┘
+          └─────────────┼──────────────┘
+                   Aggregator
+                        |
+              Verdict + Counter-Argument
+                        |
+              MongoDB (ground truth loop)
+```
+
+### Tech Stack
+
+| Layer | Choice |
+|-------|--------|
+| Data ingestion | Moralis Web3 API (BSC) |
+| Feature store | MongoDB Atlas + 30-day TTL cache |
+| Orchestration | LangGraph (Python) |
+| LLM inference | DeepSeek via OpenAI-compatible API |
+| Telegram bot | grammY (TypeScript) |
+| Web dashboard | Next.js 16 + Tailwind CSS 4 |
+| API | FastAPI + uvicorn |
+
+---
+
+## Features
+
+### P0 — Hackathon MVP
+
+- **Wallet Trust Verdict API** (`POST /analyze_wallet`) — Multi-agent reasoning on wallet funding, behavior, and timing patterns
+- **Token Trust Verdict** (`POST /analyze_token`) — Analyzes early buyers, computes bundle contamination %, graduation probability, ranked buyer table
+- **Auto-Detect Router** (`POST /analyze`) — Smart endpoint that detects wallet vs ERC-20 token contract automatically
+- **Telegram Bot** ([@NiksSupportkb_bot](https://t.me/NiksSupportkb_bot)) — Paste any address, get formatted verdict cards with inline expand for reasoning
+- **Web Dashboard** — Pixel-themed Next.js app with auto-detect, results display, and subscribe
+- **Three-Agent Reasoner** — LangGraph orchestration of Coin, Wallet, Timing agents with evidence-cite enforcement
+- **Exit Watchdog** — Subscribe to wallets, get Telegram alerts when distribution behavior is detected
+- **Feedback Loop** — Outcome resolver verifies verdicts after 24h; adversarial labeler seeds detection from confirmed rugs
+
+### Feature Pipeline
+
+| Feature | Description |
+|---------|-------------|
+| `bundle_coefficient` | Fraction of txs sharing a block (0-1). High = coordinated bundle bot |
+| `timing_entropy` | Shannon entropy of inter-tx intervals. Low = automated cadence |
+| `max_co_buyer_jaccard` | Jaccard overlap between buyer sets. High = coordinated cluster |
+| `graph_distance_to_adversarial` | Hops to known-adversarial wallet. 0 = is adversarial, 999 = no connection |
+| `cross_token_alpha_variance` | PnL variance across tokens. Low = farm bot |
+| `funding_ancestor_depth` | Length of funding chain back to CEX/null source |
+| `distinct_tokens_traded` | Number of unique tokens the wallet has touched |
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/analyze` | Auto-detect wallet vs token, run appropriate pipeline |
+| `POST` | `/analyze_wallet` | Wallet trust verdict with reasoning traces |
+| `POST` | `/analyze_token` | Token verdict with ranked early buyers |
+| `POST` | `/subscribe` | Subscribe Telegram chat to exit alerts |
+| `POST` | `/unsubscribe` | Remove subscription |
+| `GET` | `/verdicts` | List verdict history |
+| `GET` | `/accuracy` | Verdict-vs-outcome accuracy report |
+| `GET` | `/healthz` | Component health check |
+| `POST` | `/admin/run_labeler` | Manual adversarial labeling trigger |
+| `POST` | `/admin/run_resolver` | Manual outcome resolver trigger |
+
+---
 
 ## Getting Started
 
@@ -14,41 +129,67 @@ Mirage is a multi-agent reasoning engine designed to detect adversarial bots (bu
 
 - Node.js 18+
 - Python 3.10+
-- API Keys: BscScan, Dune Analytics (optional), OpenAI.
 
 ### Installation
 
-1. Clone the repository.
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+git clone https://github.com/SAHU-01/Mirage.git
+cd Mirage
+```
 
-### Running the Project
+### 1. Engine (Python)
 
-#### 1. Start the Engine (Python)
 ```bash
 cd apps/engine
+cp .env.example .env
+# Fill in your API keys in .env
 pip install -r requirements.txt
-uvicorn main:app --reload
+uvicorn main:app --reload --port 8000
 ```
 
-#### 2. Start the Telegram Bot (TypeScript)
+### 2. Telegram Bot (TypeScript)
+
 ```bash
 cd apps/bot
-# Fill in .env with TELEGRAM_BOT_TOKEN and ENGINE_API_URL
+cp .env.example .env
+# Fill in TELEGRAM_BOT_TOKEN
+npm install
 npm run dev
 ```
 
-#### 3. Start the Web Dashboard (Next.js)
+### 3. Web Dashboard (Next.js)
+
 ```bash
 cd apps/web
+npm install
 npm run dev
 ```
 
-## Features (MVP P0)
+### Environment Variables
 
-- ✅ **Wallet Trust Verdict API**: Multi-agent reasoning on wallet funding and behavior.
-- ✅ **Telegram Bot Surface**: Quick screenshot-ready audit cards.
-- ✅ **Web Dashboard**: Visual trust scores and reasoning traces.
-- ✅ **Feature Pipeline**: On-chain data ingestion and structural feature extraction.
+```env
+# LLM Provider
+DEEPSEEK_API_KEY=         # DeepSeek API key
+LLM_MODEL=deepseek-chat   # Model name
+LLM_BASE_URL=https://api.deepseek.com/v1
+
+# On-Chain Data
+MORALIS_API_KEY=           # Moralis Web3 API (free tier covers BSC)
+
+# Datastore
+MONGODB_URI=               # MongoDB connection string
+MONGODB_DB=mirage          # Database name
+
+# Alerts
+TELEGRAM_BOT_TOKEN=        # Telegram bot token
+```
+
+---
+
+## Research Backing
+
+Based on: Luo et al., *"Resisting Manipulative Bots in Meme Coin Copy Trading: A Multi-Agent Approach with Chain-of-Thought Reasoning"*, ACM WWW 2026, [arXiv:2601.08641](https://arxiv.org/abs/2601.08641).
+
+---
+
+Built for the **Four.meme AI Sprint** (April 8-22, 2026) | BNB Chain

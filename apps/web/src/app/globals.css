@@ -61,9 +61,9 @@ body::before {
 /* Retro button style */
 .retro-btn {
   font-family: var(--font-pixel), monospace;
-  font-size: 7px;
+  font-size: 8px;
   text-transform: uppercase;
-  padding: 8px 14px;
+  padding: 10px 16px;
   border: 2px solid var(--retro-btn-border);
   background: var(--retro-btn-bg);
   color: var(--retro-dark);
@@ -109,17 +109,17 @@ body::before {
   background: var(--cream);
   border: 2px solid var(--retro-border);
   box-shadow: 4px 4px 0px var(--retro-border);
-  padding: 16px;
+  padding: 20px;
 }
 
 /* Retro input */
 .retro-input {
   font-family: var(--font-pixel), monospace;
-  font-size: 7px;
+  font-size: 8px;
   background: #fff;
   border: 2px solid var(--retro-border);
   box-shadow: inset 2px 2px 0px rgba(0, 0, 0, 0.1);
-  padding: 10px 12px;
+  padding: 12px 14px;
   color: var(--retro-dark);
   outline: none;
 }
@@ -172,14 +172,14 @@ body::before {
 
 /* Retro section heading */
 .retro-heading {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--retro-dark);
   letter-spacing: 1px;
 }
 
 /* Retro label (small muted text) */
 .retro-label {
-  font-size: 6px;
+  font-size: 7px;
   text-transform: uppercase;
   letter-spacing: 2px;
   color: var(--retro-muted);
@@ -187,20 +187,20 @@ body::before {
 
 /* Retro body text */
 .retro-text {
-  font-size: 7px;
+  font-size: 9px;
   color: var(--retro-text);
   line-height: 1.8;
 }
 
 .retro-text-light {
-  font-size: 7px;
+  font-size: 9px;
   color: var(--retro-text-light);
   line-height: 1.8;
 }
 
 /* Retro subtitle */
 .retro-subtitle {
-  font-size: 7px;
+  font-size: 9px;
   color: var(--retro-subtitle);
   line-height: 1.8;
 }
@@ -242,14 +242,14 @@ body::before {
 }
 
 .retro-trace p {
-  font-size: 7px;
+  font-size: 8px;
   color: var(--retro-text);
   line-height: 2;
 }
 
 /* Retro accent dot */
 .retro-accent {
-  font-size: 7px;
+  font-size: 9px;
   color: var(--retro-green);
 }
 
@@ -261,7 +261,7 @@ body::before {
 
 /* Retro footer */
 .retro-footer {
-  font-size: 6px;
+  font-size: 7px;
   color: var(--retro-muted);
 }
 
