@@ -398,6 +398,7 @@ export default function Home() {
           <div className="flex flex-wrap justify-center gap-3">
             <a href="/docs" style={{ fontSize: 8, color: "#1a1a2e", textDecoration: "none", fontWeight: "bold", textShadow: "1px 1px 0px rgba(245,240,232,0.8)" }}>DOCS</a>
             <a href="https://dorahacks.io/buidl/43379" target="_blank" rel="noopener noreferrer" style={{ fontSize: 8, color: "#1a1a2e", textDecoration: "none", fontWeight: "bold", textShadow: "1px 1px 0px rgba(245,240,232,0.8)" }}>DORAHACKS</a>
+            <a href="https://github.com/SAHU-01/Mirage/blob/main/PRD-2026-04-19.pdf" target="_blank" rel="noopener noreferrer" style={{ fontSize: 8, color: "#1a1a2e", textDecoration: "none", fontWeight: "bold", textShadow: "1px 1px 0px rgba(245,240,232,0.8)" }}>PRD</a>
             <a href="https://github.com/SAHU-01/Mirage" target="_blank" rel="noopener noreferrer" style={{ fontSize: 8, color: "#1a1a2e", textDecoration: "none", fontWeight: "bold", textShadow: "1px 1px 0px rgba(245,240,232,0.8)" }}>GITHUB</a>
           </div>
           <div className="flex items-center gap-2">
