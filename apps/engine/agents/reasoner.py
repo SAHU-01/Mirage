@@ -1,4 +1,4 @@
-from typing import Annotated, TypedDict, List
+from typing import Annotated, TypedDict, List, Optional
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import BaseMessage, HumanMessage
@@ -17,7 +17,11 @@ class AgentState(TypedDict):
 
 class MirageReasoner:
     def __init__(self):
-        self.llm = ChatOpenAI(model="gpt-4o", api_key=os.getenv("OPENAI_API_KEY"))
+        self.llm = ChatOpenAI(
+            model="deepseek-chat",
+            api_key=os.getenv("DEEPSEEK_API_KEY"),
+            base_url="https://api.deepseek.com",
+        )
         self.workflow = StateGraph(AgentState)
         
         # Define nodes
