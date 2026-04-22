@@ -1,0 +1,291 @@
+@import "tailwindcss";
+
+:root {
+  --font-pixel: "Press Start 2P", monospace;
+  --sky-top: #c8b6e2;
+  --sky-bottom: #a7d8f0;
+  --grass-green: #5a8f3c;
+  --grass-light: #7ec850;
+  --cream: #f5f0e8;
+  --retro-green: #4ade80;
+  --retro-dark: #1a1a2e;
+  --retro-border: #2d2d44;
+  --retro-btn-bg: #d4edda;
+  --retro-btn-border: #1a1a2e;
+  --retro-muted: #8a8aaa;
+  --retro-text: #4a4a6a;
+  --retro-text-light: #6b6b8a;
+  --retro-subtitle: #3d3d5c;
+  --retro-divider: #d4d4e0;
+}
+
+@theme inline {
+  --color-background: var(--cream);
+  --color-foreground: var(--retro-dark);
+  --font-sans: var(--font-pixel);
+  --font-mono: var(--font-pixel);
+}
+
+* {
+  image-rendering: pixelated;
+}
+
+body {
+  font-family: var(--font-pixel), monospace;
+  background: url('/mirage-bg.png') center bottom / cover no-repeat fixed,
+    linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 60%, var(--grass-light) 60%, var(--grass-green) 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  color: var(--retro-dark);
+  position: relative;
+}
+
+/* Pixel scanline overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* Grass footer is now part of the background image */
+
+/* Retro button style */
+.retro-btn {
+  font-family: var(--font-pixel), monospace;
+  font-size: 7px;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  border: 2px solid var(--retro-btn-border);
+  background: var(--retro-btn-bg);
+  color: var(--retro-dark);
+  cursor: pointer;
+  transition: all 0.1s;
+  box-shadow: 3px 3px 0px var(--retro-btn-border);
+  letter-spacing: 1px;
+}
+
+.retro-btn:hover {
+  background: #b8f0c4;
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0px var(--retro-btn-border);
+}
+
+.retro-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0px 0px 0px var(--retro-btn-border);
+}
+
+.retro-btn-danger {
+  background: #fecaca;
+  border-color: #7f1d1d;
+  box-shadow: 3px 3px 0px #7f1d1d;
+}
+
+.retro-btn-danger:hover {
+  background: #fca5a5;
+}
+
+.retro-btn-primary {
+  background: #fef08a;
+  border-color: #713f12;
+  box-shadow: 3px 3px 0px #713f12;
+}
+
+.retro-btn-primary:hover {
+  background: #fde047;
+}
+
+/* Retro card */
+.retro-card {
+  background: var(--cream);
+  border: 2px solid var(--retro-border);
+  box-shadow: 4px 4px 0px var(--retro-border);
+  padding: 16px;
+}
+
+/* Retro input */
+.retro-input {
+  font-family: var(--font-pixel), monospace;
+  font-size: 7px;
+  background: #fff;
+  border: 2px solid var(--retro-border);
+  box-shadow: inset 2px 2px 0px rgba(0, 0, 0, 0.1);
+  padding: 10px 12px;
+  color: var(--retro-dark);
+  outline: none;
+}
+
+.retro-input:focus {
+  border-color: #4ade80;
+  box-shadow: inset 2px 2px 0px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(74, 222, 128, 0.3);
+}
+
+.retro-input::placeholder {
+  color: #a0a0b0;
+}
+
+/* Blinking cursor effect */
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.blink {
+  animation: blink 1s step-end infinite;
+}
+
+/* Score bar */
+.score-bar-bg {
+  background: #e0ddd4;
+  border: 2px solid var(--retro-border);
+  height: 14px;
+}
+
+.score-bar-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+  image-rendering: auto;
+}
+
+/* Floating pixel clouds */
+@keyframes float-cloud {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(20px); }
+}
+
+.pixel-cloud {
+  position: fixed;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 4px;
+  z-index: 1;
+  animation: float-cloud 8s ease-in-out infinite;
+}
+
+/* Retro section heading */
+.retro-heading {
+  font-size: 9px;
+  color: var(--retro-dark);
+  letter-spacing: 1px;
+}
+
+/* Retro label (small muted text) */
+.retro-label {
+  font-size: 6px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--retro-muted);
+}
+
+/* Retro body text */
+.retro-text {
+  font-size: 7px;
+  color: var(--retro-text);
+  line-height: 1.8;
+}
+
+.retro-text-light {
+  font-size: 7px;
+  color: var(--retro-text-light);
+  line-height: 1.8;
+}
+
+/* Retro subtitle */
+.retro-subtitle {
+  font-size: 7px;
+  color: var(--retro-subtitle);
+  line-height: 1.8;
+}
+
+/* Retro verdict badge */
+.retro-badge {
+  display: inline-block;
+  padding: 8px 14px;
+  border: 2px solid;
+  font-size: 9px;
+  letter-spacing: 2px;
+  box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.2);
+}
+
+.retro-badge-copy {
+  color: #15803d;
+  border-color: #166534;
+  background: #dcfce7;
+}
+
+.retro-badge-avoid {
+  color: #dc2626;
+  border-color: #991b1b;
+  background: #fee2e2;
+}
+
+.retro-badge-uncertain {
+  color: #a16207;
+  border-color: #854d0e;
+  background: #fef9c3;
+}
+
+/* Retro trace block */
+.retro-trace {
+  background: #fff;
+  border: 2px solid var(--retro-border);
+  box-shadow: 2px 2px 0px var(--retro-border);
+  padding: 12px;
+}
+
+.retro-trace p {
+  font-size: 7px;
+  color: var(--retro-text);
+  line-height: 2;
+}
+
+/* Retro accent dot */
+.retro-accent {
+  font-size: 7px;
+  color: var(--retro-green);
+}
+
+/* Retro title text shadow */
+.retro-title {
+  color: var(--retro-dark);
+  text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.15);
+}
+
+/* Retro footer */
+.retro-footer {
+  font-size: 6px;
+  color: var(--retro-muted);
+}
+
+/* Retro table */
+table tbody tr {
+  border-bottom: 1px solid var(--retro-divider);
+}
+
+table tbody tr:hover {
+  background: rgba(74, 222, 128, 0.06);
+}
+
+/* Retro button as link */
+a.retro-btn {
+  text-decoration: none;
+  display: inline-block;
+}
+
+/* Loading animation */
+@keyframes pixel-loading {
+  0% { content: "■□□□□"; }
+  20% { content: "■■□□□"; }
+  40% { content: "■■■□□"; }
+  60% { content: "■■■■□"; }
+  80% { content: "■■■■■"; }
+  100% { content: "□□□□□"; }
+}
