@@ -6,4 +6,4 @@ langchain-core
 pydantic
 python-dotenv
 httpx
-redis
+motor

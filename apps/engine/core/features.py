@@ -16,9 +16,12 @@ class FeatureExtractor:
         """Fraction of txs that share a block with at least one other tx in the set."""
         if not transactions:
             return 0.0
-        block_counts: Counter = Counter(tx.get("blockNumber") for tx in transactions)
+        dicts = [tx for tx in transactions if isinstance(tx, dict)]
+        if not dicts:
+            return 0.0
+        block_counts: Counter = Counter(tx.get("blockNumber") for tx in dicts)
         bundled = sum(count for count in block_counts.values() if count > 1)
-        return bundled / len(transactions)
+        return bundled / len(dicts)
 
     @staticmethod
     def calculate_timing_entropy(timestamps: List[int]) -> float:
@@ -83,13 +86,29 @@ class FeatureExtractor:
         token_pnls: Optional[List[float]] = None,
         co_buyers: Optional[List[List[str]]] = None,
         wallet_address: str = "",
+        known_adversarial: Optional[Set[str]] = None,
     ) -> Dict:
-        """Compute the full feature bundle for a wallet."""
+        """Compute the full feature bundle for a wallet.
+
+        When `known_adversarial` is provided (runtime-populated from the
+        MirageStore labeling pipeline), `graph_distance_to_adversarial` uses it
+        instead of the module-level seed set.
+        """
         funding_ancestors = funding_ancestors or []
         token_pnls = token_pnls or []
         co_buyers = co_buyers or []
 
-        timestamps = [int(tx["timeStamp"]) for tx in transactions if tx.get("timeStamp")]
+        timestamps: List[int] = []
+        for tx in transactions:
+            if not isinstance(tx, dict):
+                continue
+            ts = tx.get("timeStamp")
+            if ts is None:
+                continue
+            try:
+                timestamps.append(int(ts))
+            except (TypeError, ValueError):
+                continue
 
         max_jaccard = 0.0
         for i in range(len(co_buyers)):
@@ -99,14 +118,24 @@ class FeatureExtractor:
                     cls.calculate_co_buyer_jaccard(co_buyers[i], co_buyers[j]),
                 )
 
+        # Derive an implicit funding ancestor: the distinct senders in this
+        # wallet's history are candidate funders. This is a cheap proxy until
+        # we build true funding-chain tracing.
+        inferred_funders = list({
+            (tx.get("from") or "").lower()
+            for tx in transactions
+            if isinstance(tx, dict) and tx.get("from")
+        })
+        funding_chain = funding_ancestors or inferred_funders
+
         return {
             "tx_count": len(transactions),
             "bundle_coefficient": cls.calculate_bundle_coefficient(transactions),
             "timing_entropy": cls.calculate_timing_entropy(timestamps),
             "max_co_buyer_jaccard": max_jaccard,
             "graph_distance_to_adversarial": cls.graph_distance_to_adversarial(
-                wallet_address, funding_ancestors
+                wallet_address, funding_chain, known_adversarial=known_adversarial
             ),
             "cross_token_alpha_variance": cls.cross_token_alpha_variance(token_pnls),
-            "funding_ancestor_depth": cls.funding_ancestor_depth(funding_ancestors),
+            "funding_ancestor_depth": cls.funding_ancestor_depth(funding_chain),
         }

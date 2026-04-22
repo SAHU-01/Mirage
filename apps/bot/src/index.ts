@@ -1,4 +1,4 @@
-import { Bot, InlineKeyboard } from "grammy";
+import { Bot, InlineKeyboard, type Context } from "grammy";
 import axios from "axios";
 import * as dotenv from "dotenv";
 
@@ -109,10 +109,22 @@ const lastTokenByChat = new Map<number, TokenVerdict>();
 bot.command("start", (ctx) =>
   ctx.reply(
     "*Welcome to Mirage* — the anti-adversarial intelligence layer for BNB Chain.\n\n" +
-      "Paste any BNB wallet or Four.meme token address and I'll tell you if it's smart money — or cheating.",
+      "Paste any BNB wallet or Four.meme token address and I'll tell you if it's smart money — or cheating.\n\n" +
+      "Commands:\n" +
+      "• `/analyze <address>` — manual analysis\n" +
+      "• `/chatid` — your Telegram chat id (needed to subscribe from the web dashboard)",
     { parse_mode: "Markdown" },
   ),
 );
+
+bot.command("chatid", (ctx) => {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+  ctx.reply(
+    `Your Telegram chat id is:\n\`${chatId}\`\n\nPaste this into the web dashboard's Subscribe box to receive exit-signal alerts here.`,
+    { parse_mode: "Markdown" },
+  );
+});
 
 bot.command("analyze", async (ctx) => {
   const arg = ctx.match?.trim();
@@ -132,45 +144,46 @@ bot.on("message:text", async (ctx) => {
   }
 });
 
-async function handleAddress(ctx: Parameters<Parameters<typeof bot.on>[1]>[0], address: string) {
-  const status = await ctx.reply(`🔍 Analyzing \`${address}\`…`, { parse_mode: "Markdown" });
+type AnalyzeResponse =
+  | { kind: "token"; verdict: TokenVerdict }
+  | { kind: "wallet"; verdict: WalletVerdict };
+
+async function handleAddress(ctx: Context, address: string) {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+  const status = await ctx.reply(
+    `🔍 Analyzing \`${address}\`…\n_detecting wallet vs token…_`,
+    { parse_mode: "Markdown" },
+  );
   try {
-    const walletResp = await axios.post<WalletVerdict>(
-      `${ENGINE_API_URL}/analyze_wallet`,
-      { wallet_address: address },
-      { timeout: 60_000 },
+    const resp = await axios.post<AnalyzeResponse>(
+      `${ENGINE_API_URL}/analyze`,
+      { address },
+      { timeout: 180_000 },
     );
-    lastWalletByChat.set(ctx.chat.id, walletResp.data);
-    await ctx.api.editMessageText(
-      ctx.chat.id,
-      status.message_id,
-      formatWalletCard(walletResp.data),
-      { parse_mode: "Markdown", reply_markup: walletKeyboard() },
-    );
-  } catch (err) {
-    const walletFailed = axios.isAxiosError(err);
-    if (walletFailed) {
-      try {
-        const tokenResp = await axios.post<TokenVerdict>(
-          `${ENGINE_API_URL}/analyze_token`,
-          { token_address: address },
-          { timeout: 90_000 },
-        );
-        lastTokenByChat.set(ctx.chat.id, tokenResp.data);
-        await ctx.api.editMessageText(
-          ctx.chat.id,
-          status.message_id,
-          formatTokenCard(tokenResp.data),
-          { parse_mode: "Markdown" },
-        );
-        return;
-      } catch {
-        /* fall through */
-      }
+    if (resp.data.kind === "token") {
+      lastTokenByChat.set(chatId, resp.data.verdict);
+      await ctx.api.editMessageText(
+        chatId,
+        status.message_id,
+        "🪙 Detected as *token* — analyzing early buyers.\n\n" +
+          formatTokenCard(resp.data.verdict),
+        { parse_mode: "Markdown" },
+      );
+    } else {
+      lastWalletByChat.set(chatId, resp.data.verdict);
+      await ctx.api.editMessageText(
+        chatId,
+        status.message_id,
+        "👛 Detected as *wallet* — analyzing trading behavior.\n\n" +
+          formatWalletCard(resp.data.verdict),
+        { parse_mode: "Markdown", reply_markup: walletKeyboard() },
+      );
     }
+  } catch (err) {
     console.error(err);
     await ctx.api.editMessageText(
-      ctx.chat.id,
+      chatId,
       status.message_id,
       "❌ Engine error. Please try again later.",
     );
@@ -207,7 +220,29 @@ bot.callbackQuery("counter", async (ctx) => {
 });
 
 bot.callbackQuery("subscribe", async (ctx) => {
-  await ctx.answerCallbackQuery("Subscription alerts coming in P1.");
+  const v = lastWalletByChat.get(ctx.chat?.id ?? 0);
+  if (!v || !ctx.chat) {
+    await ctx.answerCallbackQuery("No recent wallet verdict to subscribe to.");
+    return;
+  }
+  try {
+    await axios.post(`${ENGINE_API_URL}/subscribe`, {
+      chat_id: ctx.chat.id,
+      wallet_address: v.wallet_address,
+    });
+    await ctx.answerCallbackQuery("🔔 Subscribed — you'll get exit signals.");
+    await ctx.reply(
+      `🔔 *Watchdog armed* on \`${v.wallet_address}\`\n` +
+        `You'll receive an alert if Mirage detects distribution or exit behavior.`,
+      { parse_mode: "Markdown" },
+    );
+  } catch (err) {
+    const msg =
+      axios.isAxiosError(err) && err.response?.data?.detail
+        ? err.response.data.detail
+        : "Subscription failed.";
+    await ctx.answerCallbackQuery(msg);
+  }
 });
 
 bot.callbackQuery("share", async (ctx) => {
