@@ -1,9 +1,9 @@
 fastapi
-uvicorn
+uvicorn[standard]
 langgraph
 langchain-openai
+langchain-core
 pydantic
 python-dotenv
 httpx
-psycopg2-binary
 redis
