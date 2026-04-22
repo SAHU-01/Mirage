@@ -173,8 +173,8 @@ export default function DocsPage() {
                 "Every verdict ships with a human-readable chain of thought a trader can audit and override.",
               ],
               [
-                "Academically grounded",
-                "Direct productization of ACM WWW 2026 research (Luo et al., arXiv 2601.08641). Multi-agent CoT beats zero-shot LLMs and statistical baselines.",
+                "Research-inspired",
+                "Inspired by ACM WWW 2026 research (Luo et al., arXiv 2601.08641) which proved multi-agent CoT detects adversarial wallets on Solana. Mirage adapts this for BNB Chain with extensions: evidence citations, counter-arguments, continuous scoring, and a feedback loop.",
               ],
               [
                 "Evidence-cited",

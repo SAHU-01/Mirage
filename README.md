@@ -4,7 +4,7 @@
 
 Mirage is an anti-adversarial intelligence layer for memecoin copy-trading on **Four.meme** and **BNB Chain**. It uses a multi-agent LLM system with chain-of-thought reasoning to analyze wallets and tokens, producing explainable **Trust Verdicts** (Copy / Avoid / Uncertain) backed by on-chain evidence citations.
 
-Built on [ACM WWW 2026 research](https://arxiv.org/abs/2601.08641) (Luo et al.) proving multi-agent CoT detects adversarial memecoin wallets better than zero-shot LLMs and statistical baselines.
+Inspired by the research direction established by [Luo et al. (ACM WWW 2026)](https://arxiv.org/abs/2601.08641), which proved multi-agent CoT detects adversarial memecoin wallets on Solana. Mirage productizes this approach for **BNB Chain** with extensions: evidence-cited reasoning, counter-arguments, continuous trust scoring, and a ground-truth feedback loop.
 
 ---
 
@@ -43,26 +43,35 @@ Mirage does not display wallets — it *reasons* about them. For every wallet an
 
 ## Architecture
 
-```
-User (Web / Telegram)
-        |
-   POST /analyze (auto-detect wallet vs token)
-        |
-   Moralis Web3 API (BSC) → fetch txs, transfers, metadata
-        |
-   Feature Extraction (7 structured signals)
-        |
-   Evidence Pool (block numbers, tx hashes, wallets)
-        |
-   ┌─────────────┬──────────────┬──────────────┐
-   │ Coin Agent  │ Wallet Agent │ Timing Agent │
-   └──────┬──────┴──────┬───────┴──────┬───────┘
-          └─────────────┼──────────────┘
-                   Aggregator
-                        |
-              Verdict + Counter-Argument
-                        |
-              MongoDB (ground truth loop)
+```mermaid
+flowchart TD
+    A["User (Web / Telegram)"] --> B["POST /analyze"]
+    B --> C{"Auto-detect\nwallet vs token"}
+    C -->|Wallet| D["Moralis Web3 API\nfetch txs, transfers"]
+    C -->|Token| D
+    D --> E["Feature Extraction\n7 structured signals"]
+    E --> F["Evidence Pool\nblocks, tx hashes, wallets"]
+    F --> G["Coin Agent"]
+    F --> H["Wallet Agent"]
+    F --> I["Timing Agent"]
+    G --> J["Aggregator"]
+    H --> J
+    I --> J
+    J --> K["Trust Verdict\nCOPY / AVOID / UNCERTAIN"]
+    K --> L["Counter-Argument"]
+    L --> M[("MongoDB\nground truth loop")]
+    M -->|"24h later"| N["Outcome Resolver"]
+    N -->|"rugged / graduated"| O["Adversarial Labeler"]
+    O -->|"seeds"| F
+
+    style A fill:#fef08a,stroke:#713f12,color:#1a1a2e
+    style C fill:#f5f0e8,stroke:#2d2d44,color:#1a1a2e
+    style G fill:#dcfce7,stroke:#166534,color:#1a1a2e
+    style H fill:#dcfce7,stroke:#166534,color:#1a1a2e
+    style I fill:#dcfce7,stroke:#166534,color:#1a1a2e
+    style J fill:#fef9c3,stroke:#854d0e,color:#1a1a2e
+    style K fill:#d1fae5,stroke:#166534,color:#1a1a2e
+    style M fill:#e0e7ff,stroke:#3730a3,color:#1a1a2e
 ```
 
 ### Tech Stack
@@ -188,7 +197,21 @@ TELEGRAM_BOT_TOKEN=        # Telegram bot token
 
 ## Research Backing
 
-Based on: Luo et al., *"Resisting Manipulative Bots in Meme Coin Copy Trading: A Multi-Agent Approach with Chain-of-Thought Reasoning"*, ACM WWW 2026, [arXiv:2601.08641](https://arxiv.org/abs/2601.08641).
+Inspired by: Luo et al., *"Resisting Manipulative Bots in Meme Coin Copy Trading: A Multi-Agent Approach with Chain-of-Thought Reasoning"*, ACM WWW 2026, [arXiv:2601.08641](https://arxiv.org/abs/2601.08641).
+
+The paper proves multi-agent CoT outperforms single-model analysis for adversarial wallet detection on Solana/Pump.fun (67% precision, 70% wallet selection accuracy). Mirage takes this core thesis and builds a productized version for BNB Chain/Four.meme with several extensions not in the paper:
+
+| | Paper (Luo et al.) | Mirage |
+|---|---|---|
+| Chain | Solana / Pump.fun | BNB Chain / Four.meme |
+| Agents | 4 (Meme, Wallet, Wealth, DEX) | 3 + Aggregator (Coin, Wallet, Timing) |
+| Output | Binary (good/bad) | Continuous Trust Score 0-100 |
+| Reasoning | Free-form CoT | Evidence-cited (must cite block/tx/wallet) |
+| Counter-argument | No | Yes — explains what would invalidate verdict |
+| Feedback loop | No | Yes — outcome resolver verifies after 24h |
+| Auto-execution | Yes (Wealth + DEX agents) | No — intelligence layer only |
+| Multimodal | Yes (charts + comments) | No — structured features only |
+| Features | Bundle detection, wash trading score | Bundle coeff, timing entropy, co-buyer Jaccard, graph distance to adversarial, cross-token alpha variance |
 
 ---
 
